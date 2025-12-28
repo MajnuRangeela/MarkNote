@@ -348,7 +348,7 @@ SOFTWARE.
 
 <div align="center">
 
-**Made with ❤️ by developers, for developers**
+**Made with ❤️ by Claude AI, for developers**
 
 ⭐ Star this repo if you find it useful!
 
