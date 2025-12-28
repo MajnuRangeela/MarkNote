@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkNote - Markdown Note Taking App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --bg-tertiary: #e5e7eb;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #d1d5db;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+        }
+
+        .dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #4b5563;
+            --accent: #60a5fa;
+            --accent-hover: #3b82f6;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .sidebar {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        .editor-area, .preview-area {
+            background-color: var(--bg-primary);
+            border-color: var(--border-color);
+        }
+
+        .note-item:hover, .folder-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .note-item.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        textarea {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        input, select {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .tag {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        /* ===== STYLISH PREVIEW CONTENT ===== */
+        .preview-content {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.8;
+            font-size: 1.05rem;
+            max-width: 100%;
+        }
+
+        /* Headings */
+        .preview-content h1 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 2.25em;
+            font-weight: 800;
+            margin: 1.5em 0 0.8em 0;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            position: relative;
+            padding-bottom: 0.5em;
+        }
+        .preview-content h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 2px;
+        }
+        .preview-content h2 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.75em;
+            font-weight: 700;
+            margin: 1.8em 0 0.6em 0;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            border-bottom: 2px solid var(--bg-tertiary);
+            padding-bottom: 0.4em;
+        }
+        .preview-content h3 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.35em;
+            font-weight: 600;
+            margin: 1.5em 0 0.5em 0;
+            color: var(--accent);
+        }
+        .preview-content h4 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.15em;
+            font-weight: 600;
+            margin: 1.2em 0 0.4em 0;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.9em;
+        }
+
+        /* Paragraphs */
+        .preview-content p {
+            margin: 1.2em 0;
+            color: var(--text-primary);
+            text-align: justify;
+            hyphens: auto;
+        }
+        .preview-content p:first-of-type {
+            font-size: 1.15em;
+            color: var(--text-secondary);
+        }
+
+        /* Lists */
+        .preview-content ul, .preview-content ol {
+            margin: 1.2em 0;
+            padding-left: 1.5em;
+        }
+        .preview-content ul {
+            list-style-type: none;
+        }
+        .preview-content ul li {
+            position: relative;
+            padding-left: 1.5em;
+            margin: 0.6em 0;
+        }
+        .preview-content ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.6em;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 50%;
+        }
+        .preview-content ol {
+            list-style-type: none;
+            counter-reset: item;
+        }
+        .preview-content ol li {
+            position: relative;
+            padding-left: 2.5em;
+            margin: 0.6em 0;
+            counter-increment: item;
+        }
+        .preview-content ol li::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.8em;
+            height: 1.8em;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.75em;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Inline Code */
+        .preview-content code:not(pre code) {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            padding: 0.25em 0.5em;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.88em;
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-weight: 500;
+        }
+
+        /* Code Blocks */
+        .preview-content pre {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            padding: 1.5em;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 1.5em 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .preview-content pre::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            width: 12px;
+            height: 12px;
+            background: #ff5f56;
+            border-radius: 50%;
+            box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27ca40;
+        }
+        .preview-content pre code {
+            background: none;
+            padding: 0;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #e2e8f0;
+            display: block;
+            margin-top: 1em;
+        }
+
+        /* Copy Button for Code Blocks */
+        .preview-content pre .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preview-content pre .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #e2e8f0;
+        }
+        .preview-content pre .copy-btn.copied {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
+        }
+
+        /* Blockquotes */
+        .preview-content blockquote {
+            border: none;
+            margin: 1.5em 0;
+            padding: 1.5em 2em;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08));
+            border-radius: 12px;
+            position: relative;
+            font-style: italic;
+            font-size: 1.1em;
+            color: var(--text-secondary);
+        }
+        .preview-content blockquote::before {
+            content: '"';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 4em;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: Georgia, serif;
+            line-height: 1;
+            opacity: 0.5;
+        }
+        .preview-content blockquote p {
+            margin: 0;
+            text-align: left;
+        }
+
+        /* Links */
+        .preview-content a {
+            color: var(--accent);
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            background-size: 100% 2px;
+            background-position: 0 100%;
+            background-repeat: no-repeat;
+            transition: all 0.3s ease;
+            padding-bottom: 2px;
+        }
+        .preview-content a:hover {
+            background-size: 100% 100%;
+            color: white;
+            padding: 2px 6px;
+            margin: 0 -6px;
+            border-radius: 4px;
+        }
+
+        /* Horizontal Rule */
+        .preview-content hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), #8b5cf6, transparent);
+            margin: 2.5em 0;
+            border-radius: 3px;
+        }
+
+        /* Images */
+        .preview-content img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            margin: 1.5em 0;
+        }
+
+        /* Strong and Emphasis */
+        .preview-content strong {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .preview-content em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Enhanced Table Styles */
+        .preview-content table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            margin: 1.5em 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .preview-content thead {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+        }
+        .preview-content th {
+            padding: 1em 1.25em;
+            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            border: none;
+        }
+        .preview-content td {
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1em 1.25em;
+            background-color: var(--bg-primary);
+        }
+        .preview-content tbody tr:nth-child(even) td {
+            background-color: var(--bg-secondary);
+        }
+        .preview-content tbody tr {
+            transition: all 0.2s ease;
+        }
+        .preview-content tbody tr:hover td {
+            background-color: rgba(59, 130, 246, 0.08);
+        }
+        .preview-content tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .preview-content tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 12px;
+        }
+        .preview-content tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 12px;
+        }
+
+        /* Task Lists */
+        .preview-content input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            margin-right: 8px;
+            cursor: pointer;
+            vertical-align: middle;
+            position: relative;
+        }
+        .preview-content input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-color: transparent;
+        }
+        .preview-content input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <div id="app" class="flex h-full">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 flex flex-col border-r shrink-0">
+            <!-- Logo & Theme Toggle -->
+            <div class="p-4 flex items-center justify-between border-b" style="border-color: var(--border-color)">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-pen-fancy" style="color: var(--accent)"></i>
+                    MarkNote
+                </h1>
+                <button id="themeToggle" class="p-2 rounded-lg hover:bg-opacity-20" style="color: var(--text-secondary)">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="p-3">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Search notes..."
+                        class="w-full px-3 py-2 pl-9 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-secondary)"></i>
+                </div>
+            </div>
+
+            <!-- New Note Button -->
+            <div class="px-3 pb-3">
+                <button id="newNoteBtn" class="w-full py-2 rounded-lg text-white font-medium flex items-center justify-center gap-2" style="background-color: var(--accent)">
+                    <i class="fas fa-plus"></i>
+                    New Note
+                </button>
+            </div>
+
+            <!-- Folders -->
+            <div class="flex-1 overflow-y-auto">
+                <div class="px-3 py-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold uppercase" style="color: var(--text-secondary)">Folders</span>
+                        <button id="newFolderBtn" class="text-sm hover:text-blue-500" style="color: var(--text-secondary)">
+                            <i class="fas fa-folder-plus"></i>
+                        </button>
+                    </div>
+                    <div id="folderList" class="space-y-1"></div>
+                </div>
+
+                <!-- Tags -->
+                <div class="px-3 py-2">
+                    <span class="text-xs font-semibold uppercase" style="color: var(--text-secondary)">Tags</span>
+                    <div id="tagList" class="flex flex-wrap gap-1 mt-2"></div>
+                </div>
+
+                <!-- Notes List -->
+                <div class="px-3 py-2">
+                    <span class="text-xs font-semibold uppercase" style="color: var(--text-secondary)">Notes</span>
+                    <div id="noteList" class="mt-2 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Toolbar -->
+            <div class="p-3 border-b flex items-center gap-3 flex-wrap" style="background-color: var(--bg-secondary); border-color: var(--border-color)">
+                <input type="text" id="noteTitle" placeholder="Note title..."
+                    class="px-3 py-2 rounded-lg border text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-48">
+
+                <select id="folderSelect" class="px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">No Folder</option>
+                </select>
+
+                <input type="text" id="tagInput" placeholder="Add tags (comma separated)"
+                    class="px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 w-48">
+
+                <div class="flex gap-2">
+                    <button id="exportMdBtn" class="px-3 py-2 rounded-lg border hover:bg-opacity-80 flex items-center gap-1" style="border-color: var(--border-color)">
+                        <i class="fas fa-file-export"></i>
+                        <span class="hidden sm:inline">MD</span>
+                    </button>
+                    <button id="exportHtmlBtn" class="px-3 py-2 rounded-lg border hover:bg-opacity-80 flex items-center gap-1" style="border-color: var(--border-color)">
+                        <i class="fas fa-code"></i>
+                        <span class="hidden sm:inline">HTML</span>
+                    </button>
+                    <button id="exportPdfBtn" class="px-3 py-2 rounded-lg border hover:bg-opacity-80 flex items-center gap-1" style="border-color: var(--border-color)">
+                        <i class="fas fa-file-pdf"></i>
+                        <span class="hidden sm:inline">PDF</span>
+                    </button>
+                    <button id="deleteNoteBtn" class="px-3 py-2 rounded-lg border text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-1" style="border-color: var(--border-color)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor and Preview -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Editor -->
+                <div class="flex-1 flex flex-col border-r" style="border-color: var(--border-color)">
+                    <div class="p-2 border-b flex items-center gap-2" style="background-color: var(--bg-tertiary); border-color: var(--border-color)">
+                        <span class="text-sm font-medium">Editor</span>
+                        <div class="flex gap-1 ml-auto">
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="bold" title="Bold"><i class="fas fa-bold"></i></button>
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="italic" title="Italic"><i class="fas fa-italic"></i></button>
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="heading" title="Heading"><i class="fas fa-heading"></i></button>
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="link" title="Link"><i class="fas fa-link"></i></button>
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="code" title="Code"><i class="fas fa-code"></i></button>
+                            <button class="format-btn px-2 py-1 rounded hover:bg-opacity-50" data-format="list" title="List"><i class="fas fa-list"></i></button>
+                        </div>
+                    </div>
+                    <textarea id="editor" class="flex-1 p-4 resize-none focus:outline-none font-mono text-sm" placeholder="Start writing in markdown..."></textarea>
+                </div>
+
+                <!-- Preview -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="p-2 border-b" style="background-color: var(--bg-tertiary); border-color: var(--border-color)">
+                        <span class="text-sm font-medium">Preview</span>
+                    </div>
+                    <div id="preview" class="preview-area flex-1 p-8 overflow-y-auto" style="background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);">
+                        <div class="preview-content max-w-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Modal -->
+    <div id="folderModal" class="modal fixed inset-0 hidden items-center justify-center z-50">
+        <div class="modal-content rounded-xl p-6 w-80 shadow-2xl">
+            <h3 class="text-lg font-bold mb-4">New Folder</h3>
+            <input type="text" id="folderNameInput" placeholder="Folder name"
+                class="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+            <div class="flex gap-2 justify-end">
+                <button id="cancelFolderBtn" class="px-4 py-2 rounded-lg border" style="border-color: var(--border-color)">Cancel</button>
+                <button id="saveFolderBtn" class="px-4 py-2 rounded-lg text-white" style="background-color: var(--accent)">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let state = {
+            notes: [],
+            folders: ['Personal', 'Work', 'Ideas'],
+            currentNoteId: null,
+            selectedFolder: null,
+            selectedTag: null,
+            searchQuery: '',
+            darkMode: localStorage.getItem('darkMode') === 'true'
+        };
+
+        // DOM Elements
+        const elements = {
+            themeToggle: document.getElementById('themeToggle'),
+            searchInput: document.getElementById('searchInput'),
+            newNoteBtn: document.getElementById('newNoteBtn'),
+            newFolderBtn: document.getElementById('newFolderBtn'),
+            folderList: document.getElementById('folderList'),
+            tagList: document.getElementById('tagList'),
+            noteList: document.getElementById('noteList'),
+            noteTitle: document.getElementById('noteTitle'),
+            folderSelect: document.getElementById('folderSelect'),
+            tagInput: document.getElementById('tagInput'),
+            editor: document.getElementById('editor'),
+            preview: document.getElementById('preview').querySelector('.preview-content'),
+            folderModal: document.getElementById('folderModal'),
+            folderNameInput: document.getElementById('folderNameInput'),
+            cancelFolderBtn: document.getElementById('cancelFolderBtn'),
+            saveFolderBtn: document.getElementById('saveFolderBtn'),
+            exportMdBtn: document.getElementById('exportMdBtn'),
+            exportHtmlBtn: document.getElementById('exportHtmlBtn'),
+            exportPdfBtn: document.getElementById('exportPdfBtn'),
+            deleteNoteBtn: document.getElementById('deleteNoteBtn')
+        };
+
+        // Initialize
+        function init() {
+            // Configure marked with highlight.js
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        try {
+                            return hljs.highlight(code, { language: lang }).value;
+                        } catch (e) {}
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                breaks: true,
+                gfm: true
+            });
+
+            loadState();
+            applyTheme();
+            renderAll();
+            attachEventListeners();
+
+            if (state.notes.length === 0) {
+                createNote();
+            } else if (state.notes.length > 0) {
+                selectNote(state.notes[0].id);
+            }
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('markNoteState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.notes = parsed.notes || [];
+                state.folders = parsed.folders || ['Personal', 'Work', 'Ideas'];
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('markNoteState', JSON.stringify({
+                notes: state.notes,
+                folders: state.folders
+            }));
+        }
+
+        function applyTheme() {
+            document.documentElement.classList.toggle('dark', state.darkMode);
+            elements.themeToggle.innerHTML = state.darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            localStorage.setItem('darkMode', state.darkMode);
+
+            // Toggle highlight.js theme
+            document.getElementById('hljs-light').disabled = state.darkMode;
+            document.getElementById('hljs-dark').disabled = !state.darkMode;
+
+            // Re-highlight code blocks
+            document.querySelectorAll('.preview-content pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        function renderAll() {
+            renderFolders();
+            renderTags();
+            renderNotes();
+            renderFolderSelect();
+        }
+
+        function renderFolders() {
+            elements.folderList.innerHTML = state.folders.map(folder => `
+                <div class="folder-item flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${state.selectedFolder === folder ? 'font-bold' : ''}" data-folder="${folder}">
+                    <i class="fas fa-folder" style="color: var(--accent)"></i>
+                    <span>${folder}</span>
+                    <span class="ml-auto text-xs" style="color: var(--text-secondary)">${state.notes.filter(n => n.folder === folder).length}</span>
+                </div>
+            `).join('');
+
+            elements.folderList.querySelectorAll('.folder-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.selectedFolder = state.selectedFolder === item.dataset.folder ? null : item.dataset.folder;
+                    state.selectedTag = null;
+                    renderAll();
+                });
+            });
+        }
+
+        function renderTags() {
+            const allTags = [...new Set(state.notes.flatMap(n => n.tags))];
+            elements.tagList.innerHTML = allTags.map(tag => `
+                <span class="tag px-2 py-1 rounded-full text-xs cursor-pointer ${state.selectedTag === tag ? 'ring-2 ring-offset-1' : ''}" data-tag="${tag}">${tag}</span>
+            `).join('');
+
+            elements.tagList.querySelectorAll('.tag').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.selectedTag = state.selectedTag === item.dataset.tag ? null : item.dataset.tag;
+                    state.selectedFolder = null;
+                    renderAll();
+                });
+            });
+        }
+
+        function renderNotes() {
+            let filtered = state.notes;
+
+            if (state.selectedFolder) {
+                filtered = filtered.filter(n => n.folder === state.selectedFolder);
+            }
+
+            if (state.selectedTag) {
+                filtered = filtered.filter(n => n.tags.includes(state.selectedTag));
+            }
+
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                filtered = filtered.filter(n =>
+                    n.title.toLowerCase().includes(q) ||
+                    n.content.toLowerCase().includes(q) ||
+                    n.tags.some(t => t.toLowerCase().includes(q))
+                );
+            }
+
+            elements.noteList.innerHTML = filtered.length === 0
+                ? '<p class="text-sm text-center py-4" style="color: var(--text-secondary)">No notes found</p>'
+                : filtered.map(note => `
+                    <div class="note-item px-3 py-2 rounded-lg cursor-pointer ${state.currentNoteId === note.id ? 'active' : ''}" data-id="${note.id}">
+                        <div class="font-medium text-sm truncate">${note.title || 'Untitled'}</div>
+                        <div class="text-xs truncate mt-1" style="color: ${state.currentNoteId === note.id ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'}">
+                            ${note.content.slice(0, 50) || 'No content'}
+                        </div>
+                        <div class="text-xs mt-1" style="color: ${state.currentNoteId === note.id ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'}">
+                            ${new Date(note.updatedAt).toLocaleDateString()}
+                        </div>
+                    </div>
+                `).join('');
+
+            elements.noteList.querySelectorAll('.note-item').forEach(item => {
+                item.addEventListener('click', () => selectNote(item.dataset.id));
+            });
+        }
+
+        function renderFolderSelect() {
+            elements.folderSelect.innerHTML = `
+                <option value="">No Folder</option>
+                ${state.folders.map(f => `<option value="${f}">${f}</option>`).join('')}
+            `;
+
+            const currentNote = getCurrentNote();
+            if (currentNote) {
+                elements.folderSelect.value = currentNote.folder || '';
+            }
+        }
+
+        function getCurrentNote() {
+            return state.notes.find(n => n.id === state.currentNoteId);
+        }
+
+        function createNote() {
+            const note = {
+                id: Date.now().toString(),
+                title: '',
+                content: '',
+                folder: state.selectedFolder || '',
+                tags: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            state.notes.unshift(note);
+            saveState();
+            selectNote(note.id);
+            renderNotes();
+            elements.noteTitle.focus();
+        }
+
+        function selectNote(id) {
+            state.currentNoteId = id;
+            const note = getCurrentNote();
+            if (note) {
+                elements.noteTitle.value = note.title;
+                elements.editor.value = note.content;
+                elements.tagInput.value = note.tags.join(', ');
+                elements.folderSelect.value = note.folder || '';
+                updatePreview();
+            }
+            renderNotes();
+        }
+
+        function updateCurrentNote() {
+            const note = getCurrentNote();
+            if (note) {
+                note.title = elements.noteTitle.value;
+                note.content = elements.editor.value;
+                note.folder = elements.folderSelect.value;
+                note.tags = elements.tagInput.value.split(',').map(t => t.trim()).filter(t => t);
+                note.updatedAt = new Date().toISOString();
+                saveState();
+                renderNotes();
+                renderTags();
+            }
+        }
+
+        function updatePreview() {
+            const content = elements.editor.value;
+            elements.preview.innerHTML = marked.parse(content);
+
+            // Apply syntax highlighting and add copy buttons to code blocks
+            elements.preview.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+
+            // Add copy buttons to all code blocks
+            addCopyButtons();
+        }
+
+        function addCopyButtons() {
+            elements.preview.querySelectorAll('pre').forEach((pre) => {
+                // Don't add if already has a copy button
+                if (pre.querySelector('.copy-btn')) return;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+
+                copyBtn.addEventListener('click', async () => {
+                    const code = pre.querySelector('code');
+                    const text = code ? code.textContent : pre.textContent;
+
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        copyBtn.classList.add('copied');
+
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                            copyBtn.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        copyBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        }, 2000);
+                    }
+                });
+
+                pre.appendChild(copyBtn);
+            });
+        }
+
+        function deleteNote() {
+            if (!state.currentNoteId) return;
+            if (!confirm('Are you sure you want to delete this note?')) return;
+
+            state.notes = state.notes.filter(n => n.id !== state.currentNoteId);
+            saveState();
+
+            if (state.notes.length > 0) {
+                selectNote(state.notes[0].id);
+            } else {
+                state.currentNoteId = null;
+                elements.noteTitle.value = '';
+                elements.editor.value = '';
+                elements.tagInput.value = '';
+                elements.preview.innerHTML = '';
+            }
+            renderAll();
+        }
+
+        function exportMarkdown() {
+            const note = getCurrentNote();
+            if (!note) return;
+            downloadFile(`${note.title || 'note'}.md`, note.content, 'text/markdown');
+        }
+
+        function getExportStyles() {
+            return `
+        /* Base Styles */
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 0 40px;
+            line-height: 1.8;
+            color: #1f2937;
+            font-size: 1.05rem;
+        }
+
+        /* Headings */
+        h1 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 2.5em;
+            font-weight: 800;
+            margin: 1em 0 0.5em 0;
+            color: #3b82f6;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            border-bottom: 4px solid #3b82f6;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.75em;
+            font-weight: 700;
+            margin: 1.5em 0 0.5em 0;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.3em;
+        }
+        h3 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.35em;
+            font-weight: 600;
+            margin: 1.2em 0 0.4em 0;
+            color: #3b82f6;
+        }
+        h4 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 1em 0 0.4em 0;
+        }
+
+        /* Paragraphs */
+        p {
+            margin: 1.2em 0;
+            text-align: justify;
+        }
+
+        /* Lists */
+        ul, ol { margin: 1.2em 0; padding-left: 0; list-style: none; }
+        li {
+            position: relative;
+            padding-left: 2em;
+            margin: 0.6em 0;
+        }
+        ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.6em;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+        }
+        ol { counter-reset: item; }
+        ol li { counter-increment: item; padding-left: 2.5em; }
+        ol li::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.6em;
+            height: 1.6em;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75em;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Inline Code */
+        code:not(pre code) {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            padding: 0.25em 0.5em;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.88em;
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            padding: 1.5em;
+            overflow-x: auto;
+            border-radius: 12px;
+            margin: 1.5em 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+
+        /* Blockquote */
+        blockquote {
+            margin: 1.5em 0;
+            padding: 1.5em 2em;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08));
+            border-radius: 12px;
+            font-style: italic;
+            font-size: 1.1em;
+            color: #6b7280;
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Links */
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+            border-bottom: 2px solid #3b82f6;
+            transition: all 0.2s;
+        }
+
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            margin: 1.5em 0;
+        }
+
+        /* Tables */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            margin: 1.5em 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        thead {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+        th {
+            padding: 1em 1.25em;
+            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+        }
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1em 1.25em;
+            background-color: white;
+        }
+        tbody tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Syntax Highlighting */
+        .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: #ff7b72; }
+        .hljs-string, .hljs-title, .hljs-section, .hljs-attribute, .hljs-literal, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-addition { color: #a5d6ff; }
+        .hljs-deletion, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-meta { color: #d2a8ff; }
+        .hljs-doctag { color: #7ee787; }
+        .hljs-attr { color: #79c0ff; }
+        .hljs-symbol, .hljs-bullet, .hljs-link { color: #ffa657; }
+        .hljs-comment, .hljs-quote { color: #8b949e; font-style: italic; }
+        .hljs-number { color: #79c0ff; }
+        .hljs-regexp, .hljs-variable, .hljs-template-variable { color: #ffa657; }
+            `;
+        }
+
+        function exportHTML() {
+            const note = getCurrentNote();
+            if (!note) return;
+            const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${note.title || 'Note'}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --accent: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --code-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            --blockquote-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08));
+            --inline-code-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            --table-even-row: #f9fafb;
+        }
+
+        .dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --accent: #60a5fa;
+            --accent-secondary: #a78bfa;
+            --blockquote-bg: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1));
+            --inline-code-bg: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(167, 139, 250, 0.15));
+            --table-even-row: #1f2937;
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 40px 80px 40px;
+            line-height: 1.8;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            font-size: 1.05rem;
+            min-height: 100vh;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 1000;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+        .theme-toggle .icon-sun { display: none; }
+        .theme-toggle .icon-moon { display: block; }
+        .dark .theme-toggle .icon-sun { display: block; }
+        .dark .theme-toggle .icon-moon { display: none; }
+
+        /* Content Container */
+        .content {
+            background-color: var(--bg-primary);
+            padding: 60px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .dark .content {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Headings */
+        h1 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 2.5em;
+            font-weight: 800;
+            margin: 0 0 0.8em 0;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            position: relative;
+            padding-bottom: 0.5em;
+        }
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 2px;
+        }
+        h2 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.75em;
+            font-weight: 700;
+            margin: 1.8em 0 0.6em 0;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.4em;
+        }
+        h3 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 1.35em;
+            font-weight: 600;
+            margin: 1.5em 0 0.5em 0;
+            color: var(--accent);
+        }
+        h4 {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 1.2em 0 0.4em 0;
+            color: var(--text-primary);
+        }
+
+        /* Paragraphs */
+        p {
+            margin: 1.2em 0;
+            text-align: justify;
+            color: var(--text-primary);
+        }
+
+        /* Lists */
+        ul, ol { margin: 1.2em 0; padding-left: 0; list-style: none; }
+        li {
+            position: relative;
+            padding-left: 2em;
+            margin: 0.6em 0;
+            color: var(--text-primary);
+        }
+        ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.6em;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 50%;
+        }
+        ol { counter-reset: item; }
+        ol li { counter-increment: item; padding-left: 2.5em; }
+        ol li::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.6em;
+            height: 1.6em;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75em;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Inline Code */
+        code:not(pre code) {
+            background: var(--inline-code-bg);
+            padding: 0.25em 0.5em;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.88em;
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            padding: 1.5em;
+            overflow-x: auto;
+            border-radius: 12px;
+            margin: 1.5em 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        pre::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            width: 12px;
+            height: 12px;
+            background: #ff5f56;
+            border-radius: 50%;
+            box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27ca40;
+        }
+        pre code {
+            background: none !important;
+            padding: 0;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #e2e8f0;
+            display: block;
+            margin-top: 1em;
+            border: none !important;
+        }
+
+        /* Copy Button for Code Blocks */
+        pre .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        pre .copy-btn .copy-icon,
+        pre .copy-btn .copy-text {
+            display: inline-block;
+            line-height: 1;
+        }
+        pre .copy-btn .copy-icon i {
+            display: block;
+            width: 14px;
+            text-align: center;
+        }
+        pre .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #e2e8f0;
+        }
+        pre .copy-btn.copied {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
+        }
+
+        /* Blockquote */
+        blockquote {
+            margin: 1.5em 0;
+            padding: 1.5em 2em;
+            background: var(--blockquote-bg);
+            border-radius: 12px;
+            font-style: italic;
+            font-size: 1.1em;
+            color: var(--text-secondary);
+            position: relative;
+            border: none;
+        }
+        blockquote::before {
+            content: '"';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 4em;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: Georgia, serif;
+            line-height: 1;
+            opacity: 0.5;
+        }
+        blockquote p {
+            margin: 0;
+            text-align: left;
+        }
+
+        /* Links */
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            background-size: 100% 2px;
+            background-position: 0 100%;
+            background-repeat: no-repeat;
+            transition: all 0.3s ease;
+            padding-bottom: 2px;
+        }
+        a:hover {
+            background-size: 100% 100%;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--accent-secondary), transparent);
+            margin: 2.5em 0;
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            margin: 1.5em 0;
+        }
+
+        /* Tables */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            margin: 1.5em 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        thead {
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+        }
+        th {
+            padding: 1em 1.25em;
+            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+        }
+        td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1em 1.25em;
+            background-color: var(--bg-primary);
+        }
+        tbody tr:nth-child(even) td {
+            background-color: var(--table-even-row);
+        }
+        tbody tr:hover td {
+            background-color: rgba(59, 130, 246, 0.08);
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Strong and Emphasis */
+        strong { color: var(--text-primary); font-weight: 700; }
+        em { color: var(--text-secondary); }
+
+        /* Syntax Highlighting */
+        .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: #ff7b72; }
+        .hljs-string, .hljs-title, .hljs-section, .hljs-attribute, .hljs-literal, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-addition { color: #a5d6ff; }
+        .hljs-deletion, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-meta { color: #d2a8ff; }
+        .hljs-doctag { color: #7ee787; }
+        .hljs-attr { color: #79c0ff; }
+        .hljs-symbol, .hljs-bullet, .hljs-link { color: #ffa657; }
+        .hljs-comment, .hljs-quote { color: #8b949e; font-style: italic; }
+        .hljs-number { color: #79c0ff; }
+        .hljs-regexp, .hljs-variable, .hljs-template-variable { color: #ffa657; }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>${note.title || 'Untitled'}</h1>
+        ${elements.preview.innerHTML}
+    </div>
+
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <i class="fas fa-moon icon-moon"></i>
+        <i class="fas fa-sun icon-sun"></i>
+    </button>
+
+    <scr`+`ipt>
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        // Load saved theme preference
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+
+        // Add copy buttons to code blocks
+        document.querySelectorAll('pre').forEach(function(pre) {
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+
+            var iconSpan = document.createElement('span');
+            iconSpan.className = 'copy-icon';
+            iconSpan.innerHTML = '<i class="fas fa-copy"></i>';
+
+            var textSpan = document.createElement('span');
+            textSpan.className = 'copy-text';
+            textSpan.textContent = 'Copy';
+
+            copyBtn.appendChild(iconSpan);
+            copyBtn.appendChild(textSpan);
+
+            copyBtn.addEventListener('click', async function() {
+                var code = pre.querySelector('code');
+                var text = code ? code.textContent : pre.textContent;
+
+                try {
+                    await navigator.clipboard.writeText(text);
+                    iconSpan.innerHTML = '<i class="fas fa-check"></i>';
+                    textSpan.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+
+                    setTimeout(function() {
+                        iconSpan.innerHTML = '<i class="fas fa-copy"></i>';
+                        textSpan.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    iconSpan.innerHTML = '<i class="fas fa-times"></i>';
+                    textSpan.textContent = 'Failed';
+                    setTimeout(function() {
+                        iconSpan.innerHTML = '<i class="fas fa-copy"></i>';
+                        textSpan.textContent = 'Copy';
+                    }, 2000);
+                }
+            });
+
+            pre.appendChild(copyBtn);
+        });
+    </scr`+`ipt>
+</body>
+</html>`;
+            downloadFile(`${note.title || 'note'}.html`, html, 'text/html');
+        }
+
+        function exportPDF() {
+            const note = getCurrentNote();
+            if (!note) return;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${note.title || 'Note'}</title>
+    <style>${getExportStyles()}
+        @media print {
+            body { margin: 20px; }
+            pre { white-space: pre-wrap; word-wrap: break-word; }
+            table { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <h1>${note.title || 'Untitled'}</h1>
+    ${elements.preview.innerHTML}
+</body>
+</html>`);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 250);
+        }
+
+        function downloadFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function insertFormat(format) {
+            const editor = elements.editor;
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selected = text.substring(start, end);
+
+            let insertion = '';
+            switch (format) {
+                case 'bold': insertion = `**${selected || 'bold text'}**`; break;
+                case 'italic': insertion = `*${selected || 'italic text'}*`; break;
+                case 'heading': insertion = `\n## ${selected || 'Heading'}\n`; break;
+                case 'link': insertion = `[${selected || 'link text'}](url)`; break;
+                case 'code': insertion = selected.includes('\n') ? `\n\`\`\`\n${selected || 'code'}\n\`\`\`\n` : `\`${selected || 'code'}\``; break;
+                case 'list': insertion = `\n- ${selected || 'list item'}\n`; break;
+            }
+
+            editor.value = text.substring(0, start) + insertion + text.substring(end);
+            editor.focus();
+            updateCurrentNote();
+            updatePreview();
+        }
+
+        function attachEventListeners() {
+            elements.themeToggle.addEventListener('click', () => {
+                state.darkMode = !state.darkMode;
+                applyTheme();
+            });
+
+            elements.searchInput.addEventListener('input', (e) => {
+                state.searchQuery = e.target.value;
+                renderNotes();
+            });
+
+            elements.newNoteBtn.addEventListener('click', createNote);
+
+            elements.newFolderBtn.addEventListener('click', () => {
+                elements.folderModal.classList.remove('hidden');
+                elements.folderModal.classList.add('flex');
+                elements.folderNameInput.value = '';
+                elements.folderNameInput.focus();
+            });
+
+            elements.cancelFolderBtn.addEventListener('click', () => {
+                elements.folderModal.classList.add('hidden');
+                elements.folderModal.classList.remove('flex');
+            });
+
+            elements.saveFolderBtn.addEventListener('click', () => {
+                const name = elements.folderNameInput.value.trim();
+                if (name && !state.folders.includes(name)) {
+                    state.folders.push(name);
+                    saveState();
+                    renderAll();
+                }
+                elements.folderModal.classList.add('hidden');
+                elements.folderModal.classList.remove('flex');
+            });
+
+            elements.noteTitle.addEventListener('input', updateCurrentNote);
+            elements.editor.addEventListener('input', () => {
+                updateCurrentNote();
+                updatePreview();
+            });
+            elements.folderSelect.addEventListener('change', () => {
+                updateCurrentNote();
+                renderFolders();
+            });
+            elements.tagInput.addEventListener('input', updateCurrentNote);
+
+            elements.exportMdBtn.addEventListener('click', exportMarkdown);
+            elements.exportHtmlBtn.addEventListener('click', exportHTML);
+            elements.exportPdfBtn.addEventListener('click', exportPDF);
+            elements.deleteNoteBtn.addEventListener('click', deleteNote);
+
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.addEventListener('click', () => insertFormat(btn.dataset.format));
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'n':
+                            e.preventDefault();
+                            createNote();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            saveState();
+                            break;
+                        case 'b':
+                            if (document.activeElement === elements.editor) {
+                                e.preventDefault();
+                                insertFormat('bold');
+                            }
+                            break;
+                        case 'i':
+                            if (document.activeElement === elements.editor) {
+                                e.preventDefault();
+                                insertFormat('italic');
+                            }
+                            break;
+                    }
+                }
+            });
+        }
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>
