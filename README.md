@@ -24,7 +24,7 @@
 
 | Light Mode | Dark Mode |
 |:----------:|:---------:|
-| ![Light Mode](https://via.placeholder.com/400x250/f3f4f6/1f2937?text=Light+Mode) | ![Dark Mode](https://via.placeholder.com/400x250/1f2937/f9fafb?text=Dark+Mode) |
+| ![Light Mode](https://raw.githubusercontent.com/MajnuRangeela/MarkNote/refs/heads/main/resources/light.png) | ![Dark Mode](https://raw.githubusercontent.com/MajnuRangeela/MarkNote/refs/heads/main/resources/dark.png) |
 
 </div>
 
